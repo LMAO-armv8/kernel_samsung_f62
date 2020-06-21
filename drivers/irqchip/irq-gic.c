@@ -324,10 +324,8 @@ static int gic_irq_set_vcpu_affinity(struct irq_data *d, void *vcpu)
 static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 			    bool force)
 {
-	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
-	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
-	u32 val, mask, bit;
-	unsigned long flags;
+	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + gic_irq(d);
+	unsigned int cpu;
 
 	gic_lock_irqsave(flags);
 	if (unlikely(d->common->state_use_accessors & IRQD_GIC_MULTI_TARGET)) {
@@ -355,6 +353,7 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 		if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
 				goto err_out;
 
+<<<<<<< HEAD
 		bit = gic_cpu_map[cpu] << shift;
 	}
 	mask = 0xff << shift;
@@ -362,6 +361,9 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	writel_relaxed(val | bit, reg);
 	gic_unlock_irqrestore(flags);
 
+=======
+	writeb_relaxed(gic_cpu_map[cpu], reg);
+>>>>>>> fa1c518dfe21... irqchip/gic: Atomically update affinity
 	irq_data_update_effective_affinity(d, cpumask_of(cpu));
 
 	return IRQ_SET_MASK_OK_DONE;
