@@ -242,10 +242,4 @@ source "drivers/fingerprint/Kconfig"
 source "drivers/sensors/Kconfig"
 
 source "drivers/spu_verify/Kconfig"
-
-source "drivers/security/samsung/tzic/Kconfig"
-
-source "drivers/security/samsung/five_tee_driver/Kconfig"
-
-source "drivers/security/samsung/icdrv/Kconfig"
 endmenu
