@@ -174,7 +174,7 @@ quiet_cmd_fwbin = MK_FW   $@
 		  echo "    .incbin \"$(2)\""				>>$@;\
 		  echo "_fw_end:"					>>$@;\
 		  echo "   .section .rodata.str,\"aMS\",$${PROGBITS},1"	>>$@;\
-		  echo "    .p2align $${ASM_ALIGN}"			>>$@;\
+		  echo "    .p2align 4"          			>>$@;\
 		  echo "_fw_$${FWSTR}_name:"				>>$@;\
 		  echo "    .string \"$$FWNAME\""			>>$@;\
 		  echo "    .section .builtin_fw,\"a\",$${PROGBITS}"	>>$@;\
