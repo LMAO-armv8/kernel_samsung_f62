@@ -570,7 +570,53 @@ ENDPROC(el1_error_invalid)
  */
 	.align	6
 el1_sync:
+/* store used gprs(x0, x1) through stack */
+	stp     x0, x1, [sp, #-0x10]!
+	mrs     x0, esr_el1
+	mov	x1, #0x30
+	movk	x1, #0x9600, lsl #0x10
+	cmp     x0, x1
+	b.eq    96f
+	movk	x1, #0x9400, lsl #0x10
+	cmp     x0, x1
+	b.eq    96f
+	movk	x1, #0x8600, lsl #0x10
+	cmp     x0, x1
+	b.eq    86f
+	movk	x1, #0x8400, lsl #0x10
+	cmp     x0, x1
+	b.eq    86f
+	mov	x1, #0x70
+	movk	x1, #0x9600, lsl #0x10
+	cmp     x0, x1
+	b.eq    96f
+	movk	x1, #0x9400, lsl #0x10
+	cmp     x0, x1
+	b.eq    96f
+	b	skip
+96:
+86:
+/* recovery tlb confilict */
+	dsb     sy
+	tlbi    vmalle1is
+	dsb     sy
+
+/* Add count for recovery count */
+	ldr_l   x0, __tlb_conflict_cnt
+	add     x0, x0, #1
+	cmp     x0, #0x100
+	b.ge    skip
+	str_l   x0, __tlb_conflict_cnt, x1
+	ldp	x0, x1, [sp]
+	add	sp, sp, #0x10
 	kernel_entry 1
+	kernel_exit 1
+skip:
+	ldp	x0, x1, [sp]
+	add	sp, sp, #0x10
+	kernel_entry 1
+	mov	x9, #0
+	str_l	x9, __tlb_conflict_cnt, x8
 	mrs	x1, esr_el1			// read the syndrome register
 	lsr	x24, x1, #ESR_ELx_EC_SHIFT	// exception class
 	cmp	x24, #ESR_ELx_EC_DABT_CUR	// data abort in EL1
@@ -947,6 +993,29 @@ el0_svc_naked:					// compat entry point
 	b.ne	__sys_trace
 	cmp     wscno, wsc_nr			// check upper syscall limit
 	b.hs	ni_sys
+#ifdef CONFIG_SECURITY_DEFEX
+/*
+ * Defex enter hook
+ */
+
+	ldr	x16, =defex_syscall_catch_enter
+	ldr	x16, [x16]
+	cmp	x16, xzr
+	b.eq	2f
+	uxtw	x0, wscno  //  it will copy wscno to low bits of x0 and fill high bits with 0
+	mov	x1, sp
+	blr	x16
+
+	cbnz	w0, ret_fast_syscall		// block this syscall?
+#	adr	lr, ret_fast_syscall		// return address (not needed here)
+
+	ldp	x0, x1, [sp]			// restore the syscall args
+	ldp	x2, x3, [sp, #S_X2]
+	ldp	x4, x5, [sp, #S_X4]
+	ldp	x6, x7, [sp, #S_X6]
+
+2:
+#endif
 	mask_nospec64 xscno, xsc_nr, x19	// enforce bounds for syscall number
 	ldr	x16, [stbl, xscno, lsl #3]	// address in the syscall table
 	blr	x16				// call sys_* routine
@@ -974,6 +1043,23 @@ __sys_trace:
 	mov	x1, sp				// pointer to regs
 	cmp	wscno, wsc_nr			// check upper syscall limit
 	b.hs	__ni_sys_trace
+#ifdef CONFIG_SECURITY_DEFEX
+/*
+ * Defex enter hook
+ */
+
+	ldr	x16, =defex_syscall_catch_enter
+	ldr	x16, [x16]
+	cmp	x16, xzr
+	b.eq	3f
+	uxtw	x0, wscno  //  it will copy wscno to low bits of x0 and fill high bits with 0
+	mov	x1, sp
+	blr	x16
+
+	cbnz	w0, __sys_trace_return		// block this syscall?
+#	adr	lr, __sys_trace_return		// return address (not neede here)
+3:
+#endif
 	ldp	x0, x1, [sp]			// restore the syscall args
 	ldp	x2, x3, [sp, #S_X2]
 	ldp	x4, x5, [sp, #S_X4]
