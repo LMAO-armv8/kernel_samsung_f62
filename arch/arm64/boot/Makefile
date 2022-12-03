@@ -18,7 +18,7 @@ include $(srctree)/arch/arm64/boot/dts/Makefile
 
 OBJCOPYFLAGS_Image :=-O binary -R .note -R .note.gnu.build-id -R .comment -S
 
-targets := Image Image.bz2 Image.gz Image.lz4 Image.lzma Image.lzo
+targets := Image Image.bz2 Image.gz Image.lz4 Image.lzma Image.lzo dtbo_exynos.img
 
 OS_INFO := $(findstring x86_64, $(shell uname -a))
 
@@ -29,6 +29,8 @@ else
 DTB_LIST := $(dtb-y) $(dtbo-y)
 endif
 DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+
+DTBO_OBJS_EXYNOS := $(shell find $(obj)/dts/samsung -name \*.dtbo)
 
 $(obj)/Image: vmlinux FORCE
 	$(call if_changed,objcopy)
@@ -67,6 +69,9 @@ $(obj)/Image.lzo: $(obj)/Image FORCE
 
 $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
+
+$(obj)/dtbo_exynos.img: $(DTBO_OBJS_EXYNOS) FORCE
+        $(call if_changed,mkdtimg)
 
 install:
 	$(CONFIG_SHELL) $(srctree)/$(src)/install.sh $(KERNELRELEASE) \
