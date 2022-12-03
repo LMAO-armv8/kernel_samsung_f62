@@ -72,7 +72,7 @@ $(obj)/Image.gz-dtb: $(obj)/Image.gz $(DTB_OBJS) FORCE
 	$(call if_changed,cat)
 
 $(obj)/dtbo_exynos.img: $(DTBO_OBJS_EXYNOS) FORCE
-        $(call if_changed,mkdtimg)
+	$(call if_changed,mkdtimg)
 
 $(obj)/dtb_exynos.img: $(DTB_OBJS_EXYNOS) FORCE
 	$(call if_changed,mkdtbimg)
